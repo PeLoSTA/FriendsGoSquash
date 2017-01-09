@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "157756777990",
+    "firebase_url": "https://friendzzgosquash.firebaseio.com",
+    "project_id": "friendzzgosquash",
+    "storage_bucket": "friendzzgosquash.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157756777990:android:5ff3af67ac320296",
+        "android_client_info": {
+          "package_name": "de.peterloos.friendzzgosquash"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "157756777990-dkdo3a5kjvs196921gp441ok0no03gsd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "de.peterloos.friendzzgosquash",
+            "certificate_hash": "A35E4B458D605673F4298ED6F61A4B8436DA722E"
+          }
+        },
+        {
+          "client_id": "157756777990-nguhs2301an1tuebcnqs4k3g228tt605.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAV-gHx5a3zo9JtU4Z8Z9kfK_4nYwbpfHs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "157756777990-nguhs2301an1tuebcnqs4k3g228tt605.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
