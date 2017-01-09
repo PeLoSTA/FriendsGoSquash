@@ -1,6 +1,14 @@
 package de.peterloos.friendzzgosquash;
 
 // TODO: Die ganze SettingsActivity schlägt fehl, wenn man sie aufruft, aber kein USER eingelogged ist ?!?!?!?
+// TODO: Splash Screen:
+// TODO: Hmmm, m�glicherweise komplizierter als gedacht:
+// TODO: Google: "Android Splash Screen"
+// TODO:         Meine Vorlage:
+// TODO:         https://www.bignerdranch.com/blog/splash-screens-the-right-way/
+
+// ==========================================================
+
 
 import android.content.Intent;
 import android.net.Uri;
