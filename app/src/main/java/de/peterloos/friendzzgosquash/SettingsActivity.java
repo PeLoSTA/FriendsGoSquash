@@ -7,10 +7,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -48,7 +44,6 @@ import com.google.firebase.storage.UploadTask;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 
 import de.peterloos.models.Message;
 import de.peterloos.models.User;
@@ -61,6 +56,9 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
     private static final int PERMISSION_REQUEST_ID = 1;
 
     private static final String CHILD_USERS = "users";
+    private static final String CHILD_PHOTOS = "photos";
+    private static final String CHILD_PHOTO = "photo";
+    private static final String CHILD_PHOTO_URL = "photoUrl";
 
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authStateListener;
@@ -188,8 +186,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
                             User tempUser = dataSnapshot.getValue(User.class);
 
-                            Log.d(TAG, " UPPIEEEEEE New DataSnapshot");
-
                             SettingsActivity.this.userEMailAddress = tempUser.getEmail();
                             SettingsActivity.this.userDisplayName = tempUser.getDisplayName();
                             SettingsActivity.this.userPhotoUrl = tempUser.getPhotoUrl();
@@ -256,28 +252,16 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
             this.showProgressDialog("Uploading ... ");
 
+            // retrieve uri from selected image
             Uri uri = data.getData();
 
-            // ===================================
-
-            // trying now to compress the file ....
+            // compress the file ....
             String uriString = uri.toString();
             String compressedFile = this.compressImage(uriString);
 
-            Log.d(TAG, "      ############### compressImage ==> " + compressedFile);
-
-            // ===================================
-
-            Log.d(TAG, "onActivityResult: Uri = " + uri.toString());
-            Log.d(TAG, "onActivityResult: getLastPathSegment = " + uri.getLastPathSegment());
-
-            StorageReference filepath = this.storageReference.child("Photos").child(this.userUID).child("Photo");
-            Log.d(TAG, "onActivityResult: filepath = " + filepath.toString());
-
-            // UploadTask task = filepath.putFile(uri);    // ALTE VERSION -- GFEHT !!!
-
+            StorageReference filepath = this.storageReference.child(CHILD_PHOTOS).child(this.userUID).child(CHILD_PHOTO);
             Uri compressedUri = Uri.fromFile(new File(compressedFile));
-            UploadTask task = filepath.putFile(compressedUri);    // UMSTIEG auf komprimierte Datei !!!
+            UploadTask task = filepath.putFile(compressedUri);    // moving to compressed image
 
             task.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -291,9 +275,9 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
                     Log.d(TAG, "onActivityResult: new Photo Url ==> " + SettingsActivity.this.userPhotoUrl);
 
-                    // set download uri in users section ...
+                    // set download uri in firebase database users section ...
                     String uid = SettingsActivity.this.user.getUid();
-                    SettingsActivity.this.reference.child(CHILD_USERS).child(uid).child("photoUrl").setValue(downloadUri.toString());
+                    SettingsActivity.this.reference.child(CHILD_USERS).child(uid).child(CHILD_PHOTO_URL).setValue(SettingsActivity.this.userPhotoUrl);
 
                     // ... and also in the firebase users profile
                     UserProfileChangeRequest.Builder builder = new UserProfileChangeRequest.Builder();
@@ -317,19 +301,19 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
                         }
                     });
 
-                    // show new photo ...
+                    // display new photo ...
                     if (!(SettingsActivity.this.userPhotoUrl == null || SettingsActivity.this.userPhotoUrl.equals(""))) {
                         Glide.with(SettingsActivity.this)
                                 .load(SettingsActivity.this.userPhotoUrl)
                                 .into(SettingsActivity.this.imageviewPhoto);
                     }
 
-                    // ... and finally some stats
+                    // update firebase database within 'messages' section
+                    SettingsActivity.this.firebaseUpdatePhotoUrl(SettingsActivity.this.userPhotoUrl);
+
                     long bytesTransferred = taskSnapshot.getBytesTransferred();
                     Log.d(TAG, "onActivityResult: bytesTransferred = " + bytesTransferred);
-
-                    // just to inform calling activity
-                    // SettingsActivity.this.hasPhotoUrlChanged = true;
+                    // ... and finally some stats
                 }
             });
 
@@ -338,7 +322,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
                 public void onFailure(@NonNull Exception e) {
 
                     SettingsActivity.this.hideProgressDialog();
-
                     Log.d(TAG, "onActivityResult: onFailure => " + e.getMessage());
                 }
             });
@@ -424,11 +407,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         int actualHeight = options.outHeight;
         int actualWidth = options.outWidth;
 
-        // maxHeight and maxWidth values of the compressed image are taken as 816x612
-        // TODO: To be adjusted !!!!!!!!!!!!!!!!!!!!!
-
-//        float maxHeight = 816.0f;
-//        float maxWidth = 612.0f;
         float maxHeight = 200.0f;
         float maxWidth = 200.0f;
         float imgRatio = actualWidth / actualHeight;
@@ -472,52 +450,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
             ex.printStackTrace();
         }
 
-
-//        try {
-//            scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.ARGB_8888);
-//        } catch (OutOfMemoryError ex) {
-//            ex.printStackTrace();
-//        }
-//
-//        float ratioX = actualWidth / (float) options.outWidth;
-//        float ratioY = actualHeight / (float) options.outHeight;
-//        float middleX = actualWidth / 2.0f;
-//        float middleY = actualHeight / 2.0f;
-//
-//        Matrix scaleMatrix = new Matrix();
-//        scaleMatrix.setScale(ratioX, ratioY, middleX, middleY);
-//
-//        Canvas canvas = new Canvas(scaledBitmap);
-//        canvas.setMatrix(scaleMatrix);
-//        canvas.drawBitmap(bmp, middleX - bmp.getWidth() / 2, middleY - bmp.getHeight() / 2, new Paint(Paint.FILTER_BITMAP_FLAG));
-//
-////      check the rotation of the image and display it properly
-//        ExifInterface exif;
-//        try {
-//            exif = new ExifInterface(filePath);
-//
-//            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
-//
-//            Log.d("EXIF", "Exif: " + orientation);
-//            Matrix matrix = new Matrix();
-//
-//            if (orientation == 6) {
-//                matrix.postRotate(90);
-//                Log.d("EXIF", "Exif: " + orientation);
-//            } else if (orientation == 3) {
-//                matrix.postRotate(180);
-//                Log.d("EXIF", "Exif: " + orientation);
-//            } else if (orientation == 8) {
-//                matrix.postRotate(270);
-//                Log.d("EXIF", "Exif: " + orientation);
-//            }
-//            scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0,
-//                    scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix,
-//                    true);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
         FileOutputStream out = null;
         String filename = this.getFilename();
         try {
@@ -532,124 +464,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
         return filename;
     }
-
-
-    private String compressImage_Variante_1_Geht(String imageUri) {
-
-        String filePath = this.getRealPathFromURI(imageUri);
-
-        Bitmap scaledBitmap = null;
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-
-        //  the actual bitmap pixels are *not* loaded into memory
-        options.inJustDecodeBounds = true;
-        Bitmap bmp = BitmapFactory.decodeFile(filePath, options);
-        int actualHeight = options.outHeight;
-        int actualWidth = options.outWidth;
-
-        // maxHeight and maxWidth values of the compressed image are taken as 816x612
-        // TODO: To be adjusted !!!!!!!!!!!!!!!!!!!!!
-
-//        float maxHeight = 816.0f;
-//        float maxWidth = 612.0f;
-        float maxHeight = 200.0f;
-        float maxWidth = 200.0f;
-        float imgRatio = actualWidth / actualHeight;
-        float maxRatio = maxWidth / maxHeight;
-
-        // width and height values are set maintaining the aspect ratio of the image
-        if (actualHeight > maxHeight || actualWidth > maxWidth) {
-            if (imgRatio < maxRatio) {
-                imgRatio = maxHeight / actualHeight;
-                actualWidth = (int) (imgRatio * actualWidth);
-                actualHeight = (int) maxHeight;
-            } else if (imgRatio > maxRatio) {
-                imgRatio = maxWidth / actualWidth;
-                actualHeight = (int) (imgRatio * actualHeight);
-                actualWidth = (int) maxWidth;
-            } else {
-                actualHeight = (int) maxHeight;
-                actualWidth = (int) maxWidth;
-            }
-        }
-
-        // setting inSampleSize value allows to load a scaled down version of the original image
-        options.inSampleSize = this.calculateInSampleSize(options, actualWidth, actualHeight);
-
-        // inJustDecodeBounds now set to *false* to load the actual bitmap
-        options.inJustDecodeBounds = false;
-
-        // this options allow android to claim the bitmap memory if it runs low on memory
-        options.inTempStorage = new byte[16 * 1024];
-
-        try {
-            // load bitmap
-            bmp = BitmapFactory.decodeFile(filePath, options);
-        } catch (OutOfMemoryError ex) {
-            ex.printStackTrace();
-        }
-
-        try {
-            scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.ARGB_8888);
-        } catch (OutOfMemoryError ex) {
-            ex.printStackTrace();
-        }
-
-        float ratioX = actualWidth / (float) options.outWidth;
-        float ratioY = actualHeight / (float) options.outHeight;
-        float middleX = actualWidth / 2.0f;
-        float middleY = actualHeight / 2.0f;
-
-        Matrix scaleMatrix = new Matrix();
-        scaleMatrix.setScale(ratioX, ratioY, middleX, middleY);
-
-        Canvas canvas = new Canvas(scaledBitmap);
-        canvas.setMatrix(scaleMatrix);
-        canvas.drawBitmap(bmp, middleX - bmp.getWidth() / 2, middleY - bmp.getHeight() / 2, new Paint(Paint.FILTER_BITMAP_FLAG));
-
-//      check the rotation of the image and display it properly
-        ExifInterface exif;
-        try {
-            exif = new ExifInterface(filePath);
-
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
-
-            Log.d("EXIF", "Exif: " + orientation);
-            Matrix matrix = new Matrix();
-
-            if (orientation == 6) {
-                matrix.postRotate(90);
-                Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 3) {
-                matrix.postRotate(180);
-                Log.d("EXIF", "Exif: " + orientation);
-            } else if (orientation == 8) {
-                matrix.postRotate(270);
-                Log.d("EXIF", "Exif: " + orientation);
-            }
-            scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0,
-                    scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix,
-                    true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        FileOutputStream out = null;
-        String filename = this.getFilename();
-        try {
-            out = new FileOutputStream(filename);
-
-            // write the compressed bitmap at the destination specified by filename.
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        return filename;
-    }
-
 
     public String getFilename() {
         File file = new File(Environment.getExternalStorageDirectory().getPath(), "PeLoFolder/Images");
@@ -658,10 +472,8 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
         }
         String uriSting = (file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".jpg");
         return uriSting;
-
     }
 
-    // TODO ??????????????? Was tut die ????
     private String getRealPathFromURI(String contentURI) {
         Uri contentUri = Uri.parse(contentURI);
         Cursor cursor = getContentResolver().query(contentUri, null, null, null, null);
@@ -727,8 +539,6 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
                     // use built-in JSON-to-POJO deserializer to convert snapshot to Message object
                     Message message = snapshot.getValue(Message.class);
-                    String result = String.format("  Message: %s", message.toString());
-                    Log.v(TAG, result);
 
                     if (SettingsActivity.this.userUID.equals(message.getUid())) {
 
@@ -743,7 +553,38 @@ public class SettingsActivity extends AppCompatActivity implements View.OnClickL
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.v(TAG, "FUCK");
+                Log.v(TAG, "Internal ERROR - firebaseUpdateDisplayName");
+            }
+        });
+    }
+
+    private void firebaseUpdatePhotoUrl (final String photoUrl) {
+
+        final DatabaseReference reference = this.database.getReference("messages");
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+
+                    // use built-in JSON-to-POJO deserializer to convert snapshot to Message object
+                    Message message = snapshot.getValue(Message.class);
+
+                    if (SettingsActivity.this.userUID.equals(message.getUid())) {
+
+                        String key = snapshot.getKey();
+
+                        // update firebase database according users new photo url
+                        reference.child(key).child(CHILD_PHOTO_URL).setValue(photoUrl);
+                        Log.v(TAG, "   ... updated message with new photo url ...");
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.v(TAG, "Internal ERROR - firebsaeUpdatePhotoUrl");
             }
         });
     }

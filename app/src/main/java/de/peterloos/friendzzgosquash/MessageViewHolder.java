@@ -5,7 +5,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -41,15 +40,6 @@ public class MessageViewHolder extends RecyclerView.ViewHolder {
         this.textviewDisplayname.setText(model.getDisplayName());
         this.textviewText.setText(model.getText());
 
-
-        // JUST TESTING
-//        if (model.getPhotoUrl() == null || model.getPhotoUrl().equals("")) {
-//            Log.d("PeLo", " ########################### No URL ");
-//        }
-//        else {
-//            Log.d("PeLo", "====================================> PhotoUrl = " + model.getPhotoUrl().toString());
-//        }
-
         Uri uri = null;
         String url = model.getPhotoUrl();
         if (! (url == null || url.equals(""))) {
@@ -57,13 +47,9 @@ public class MessageViewHolder extends RecyclerView.ViewHolder {
         }
 
         if (uri == null) {
-
             Drawable drawable = ContextCompat.getDrawable(this.context, R.drawable.ic_account_empty);
             this.imageviewPhoto.setImageDrawable(drawable);
         } else {
-
-            // Log.d("PeLo", "====================================> PhotoUrl = " + model.getPhotoUrl().toString());
-
             Glide.with(this.context)
                 .load(model.getPhotoUrl())
                 .into(this.imageviewPhoto);

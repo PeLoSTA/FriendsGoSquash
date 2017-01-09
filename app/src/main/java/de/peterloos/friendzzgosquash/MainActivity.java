@@ -11,7 +11,6 @@ package de.peterloos.friendzzgosquash;
 
 
 import android.content.Intent;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -72,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String userUID;
     private String userEMailAddress;
     private String userDisplayName;
-    private Uri userPhotoUrl;
+    private String userPhotoUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         this.userUID = "";
         this.userDisplayName = "";
-        this.userPhotoUrl = null;
+        this.userPhotoUrl = "";
     }
 
     private class UserAuthentication implements FirebaseAuth.AuthStateListener {
@@ -157,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 MainActivity.this.userUID = user.getUid();
                 MainActivity.this.userEMailAddress = user.getEmail();
                 MainActivity.this.userDisplayName = user.getDisplayName();
-                MainActivity.this.userPhotoUrl = user.getPhotoUrl();
+                MainActivity.this.userPhotoUrl = (user.getPhotoUrl() != null) ? user.getPhotoUrl().toString() : "";
 
                 String s = String.format("MainActivity::onAuthStateChanged ==> User %s signed in [%s]",
                     MainActivity.this.userEMailAddress, MainActivity.this.userUID);
@@ -179,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 MainActivity.this.userUID = "";
                 MainActivity.this.userEMailAddress =  "";
                 MainActivity.this.userDisplayName = "";
-                MainActivity.this.userPhotoUrl = null;
+                MainActivity.this.userPhotoUrl = "";
 
                 MainActivity.this.onBackPressed();
             }
@@ -193,11 +192,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             User tempUser = dataSnapshot.getValue(User.class);
 
-            // update user interface
+            // update informations of this user
             if (tempUser != null && !(tempUser.getDisplayName() == null || tempUser.getDisplayName().equals(""))) {
 
                 MainActivity.this.userDisplayName = tempUser.getDisplayName();
                 MainActivity.this.textviewHeader.setText("Hallo " + tempUser.getDisplayName());
+                MainActivity.this.userPhotoUrl = tempUser.getPhotoUrl();
+
+
             }
         }
 
@@ -286,8 +288,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String text = this.edittextMessage.getText().toString();
             Log.v(TAG, "sending message: " + text);
 
-            String photoUrl = (this.userPhotoUrl != null) ? this.userPhotoUrl.toString() : "";
-            Message message = new Message(this.userUID, this.userDisplayName, text, photoUrl);
+            Message message = new Message(this.userUID, this.userDisplayName, text, this.userPhotoUrl);
             this.referenceMessages.push().setValue(message);
             this.edittextMessage.setText("");
             Log.v(TAG, "done ....");
